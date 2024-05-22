@@ -1,67 +1,48 @@
-.PHONY: build-base build-api build-inference build-all run-api run-inference run-all
+# Execute the "targets" in this file with `make <target>` e.g., `make test`.
+#
+# You can also run multiple in sequence, e.g. `make clean lint test serve-coverage-report`
 
-# Default dockerhub account
-DOCKER_ACCOUNT ?= matthieujln
+build:
+	bash run.sh build
 
-#===================================#
-#       BUILD DOCKER IMAGES			
-#===================================#
-build-base:
-	cd docker/base && ./build.sh $(DOCKER_ACCOUNT)
+clean:
+	bash run.sh clean
 
-build-api:
-	cd docker/api && ./build.sh $(DOCKER_ACCOUNT)
+help:
+	bash run.sh help
 
-build-inference:
-	cd docker/inference && ./build.sh $(DOCKER_ACCOUNT)
+install:
+	bash run.sh install
 
-build-all: 
-	$(MAKE) build-base
-	$(MAKE) build-api
-	$(MAKE) build-inference
+lint:
+	bash run.sh lint
 
+lint-ci:
+	bash run.sh lint:ci
 
-#===================================#
-#        PUSH DOCKER IMAGES
-#===================================#
-push-base:
-	cd docker/base && ./push.sh $(DOCKER_ACCOUNT)
+publish-prod:
+	bash run.sh publish:prod
 
-push-api:
-	cd docker/api && ./push.sh $(DOCKER_ACCOUNT)
+publish-test:
+	bash run.sh publish:test
 
-push-inference:
-	cd docker/inference && ./push.sh $(DOCKER_ACCOUNT)
+release-prod:
+	bash run.sh release:prod
 
-push-all: 
-	$(MAKE) push-base
-	$(MAKE) push-api
-	$(MAKE) push-inference
+release-test:
+	bash run.sh release:test
 
+serve-coverage-report:
+	bash run.sh serve-coverage-report
 
-#===================================#
-#       DOCKER COMPOSE			
-#===================================#
-run-api:
-	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up api
+test-ci:
+	bash run.sh test:ci
 
-run-inference:
-	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up inference
+test-quick:
+	bash run.sh test:quick
 
-run-all:
-	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up
+test:
+	bash run.sh run-tests
 
-shutdown:
-	docker compose down
-
-teardown:
-	docker compose down -v
-
-
-#===================================#
-#       DEV COMMANDS			
-#===================================#
-upload-dev:
-	curl -X 'GET' \
-	'http://localhost:8001/upload-dev?email=user%40example.com' \
-	-H 'accept: application/json'
+test-wheel-locally:
+	bash run.sh test:wheel-locally
