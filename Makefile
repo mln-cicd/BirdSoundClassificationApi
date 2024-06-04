@@ -1,48 +1,67 @@
-# Execute the "targets" in this file with `make <target>` e.g., `make test`.
-#
-# You can also run multiple in sequence, e.g. `make clean lint test serve-coverage-report`
+.PHONY: build-base build-api build-inference build-all run-api run-inference run-all
 
-build:
-	bash run.sh build
+# Default dockerhub account
+DOCKER_ACCOUNT ?= matthieujln
 
-clean:
-	bash run.sh clean
+#===================================#
+#       BUILD DOCKER IMAGES
+#===================================#
+build-base:
+	cd docker/base && ./build.sh $(DOCKER_ACCOUNT)
 
-help:
-	bash run.sh help
+build-api:
+	cd docker/api && ./build.sh $(DOCKER_ACCOUNT)
 
-install:
-	bash run.sh install
+build-inference:
+	cd docker/inference && ./build.sh $(DOCKER_ACCOUNT)
 
-lint:
-	bash run.sh lint
+build-all:
+	$(MAKE) build-base
+	$(MAKE) build-api
+	$(MAKE) build-inference
 
-lint-ci:
-	bash run.sh lint:ci
 
-publish-prod:
-	bash run.sh publish:prod
+#===================================#
+#        PUSH DOCKER IMAGES
+#===================================#
+push-base:
+	cd docker/base && ./push.sh $(DOCKER_ACCOUNT)
 
-publish-test:
-	bash run.sh publish:test
+push-api:
+	cd docker/api && ./push.sh $(DOCKER_ACCOUNT)
 
-release-prod:
-	bash run.sh release:prod
+push-inference:
+	cd docker/inference && ./push.sh $(DOCKER_ACCOUNT)
 
-release-test:
-	bash run.sh release:test
+push-all:
+	$(MAKE) push-base
+	$(MAKE) push-api
+	$(MAKE) push-inference
 
-serve-coverage-report:
-	bash run.sh serve-coverage-report
 
-test-ci:
-	bash run.sh test:ci
+#===================================#
+#       DOCKER COMPOSE
+#===================================#
+run-api:
+	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up api
 
-test-quick:
-	bash run.sh test:quick
+run-inference:
+	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up inference
 
-test:
-	bash run.sh run-tests
+run-all:
+	DOCKERHUB_USERNAME=$(DOCKER_ACCOUNT) docker compose up
 
-test-wheel-locally:
-	bash run.sh test:wheel-locally
+shutdown:
+	docker compose down
+
+teardown:
+	docker compose down -v
+
+
+#===================================#
+#       DEV COMMANDS
+#===================================#
+upload-dev:
+	curl -X 'GET' \
+	'http://localhost:8001/upload-dev?email=user%40example.com' \
+	-H 'accept: application/json'

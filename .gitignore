@@ -1,5 +1,29 @@
-# Python .gitignore template from
-# https://github.com/github/gitignore/blob/main/Python.gitignore
+# Ignore env file
+.env
+
+# Ignore the data folder
+/data/
+src.egg-info/
+
+# Old Ignore (updated)
+/models/
+
+# Old Ignore
+launch*
+requirements_old.txt
+container.def
+.remi/
+**/__pycache__
+.venv
+.vscode
+.ipynb_checkpoints
+
+
+
+temp/**
+
+
+#### Gitignore from the repository https://github.com/github/gitignore/blob/main/Python.gitignore
 
 
 # Byte-compiled / optimized / DLL files
@@ -39,6 +63,8 @@ MANIFEST
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
+
+#
 
 # Unit test / coverage reports
 htmlcov/
@@ -110,8 +136,10 @@ ipython_config.py
 #pdm.lock
 #   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
 #   in version control.
-#   https://pdm.fming.dev/#use-with-ide
+#   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
 .pdm.toml
+.pdm-python
+.pdm-build/
 
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
@@ -163,17 +191,6 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# custom
-test-reports
-tests/artifacts
-.ruff_cache
-build
-dist
-*.egg-info
-.mypy_cache
-*env
-*.env
-*cache*
-temp/
-models/
-src/
+
+# ruff
+.ruff_cache/

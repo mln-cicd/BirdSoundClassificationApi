@@ -19,7 +19,9 @@ from app_utils.minio import fetch_file_from_minio
 logging.basicConfig(level=logging.INFO)
 
 
-def send_email(email, json_minio_path, ticket_number, minio_client, minio_bucket) -> None:
+def send_email(
+    email, json_minio_path, ticket_number, minio_client, minio_bucket
+) -> None:
     """Send an email with the classification results as an attachment.
 
     The function fetches the JSON file containing the classification results from MinIO,
@@ -27,6 +29,7 @@ def send_email(email, json_minio_path, ticket_number, minio_client, minio_bucket
     using the specified SMTP server (MailHog).
 
     Args:
+    ----
         email (str): The recipient's email address.
         json_minio_path (str): The path to the JSON file in MinIO.
         ticket_number (str): The ticket number associated with the classification request.
@@ -34,12 +37,15 @@ def send_email(email, json_minio_path, ticket_number, minio_client, minio_bucket
         minio_bucket (str): The name of the MinIO bucket where the JSON file is stored.
 
     Returns:
+    -------
         None
 
     Raises:
+    ------
         Exception: If an error occurs while sending the email.
 
     Note:
+    ----
         The function uses MailHog as the SMTP server for sending emails. Make sure MailHog
         is running and accessible at the specified SMTP server and port.
 
@@ -58,10 +64,15 @@ def send_email(email, json_minio_path, ticket_number, minio_client, minio_bucket
         local_file_path = temp_file.name
 
         # Fetch the JSON file from MinIO and save it locally
-        success = fetch_file_from_minio(minio_client, minio_bucket, json_minio_path, local_file_path)
+        success = fetch_file_from_minio(
+            minio_client, minio_bucket, json_minio_path, local_file_path
+        )
 
         if not success:
-            logging.error(f"Failed to fetch JSON file '{json_minio_path}' from MinIO. Skipping email sending.")
+            logging.error(
+                f"Failed to fetch JSON file '{json_minio_path}' from MinIO. "
+                f"Skipping email sending."
+            )
             return
 
         # Read the JSON file contents
@@ -75,18 +86,26 @@ def send_email(email, json_minio_path, ticket_number, minio_client, minio_bucket
     message["Subject"] = f"Classification Results - Ticket #{ticket_number}"
 
     # Attach the email body
-    body = f"Please find the classification results attached.\n\nTicket Number: {ticket_number}"
+    body = "Please find the classification results attached."
+    f"\n\nTicket Number: {ticket_number}"
     message.attach(MIMEText(body, "plain"))
 
     # Attach the JSON file
     json_file = MIMEApplication(json_data, _subtype="json")
-    json_file.add_header("Content-Disposition", "attachment", filename="classification_results.json")
+    json_file.add_header(
+        "Content-Disposition", "attachment", filename="classification_results.json"
+    )
     message.attach(json_file)
 
     # Send the email
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.send_message(message)
-        logging.info("\n\nEmail sent successfully to %s for ticket #%s\n\n", email, ticket_number)
-    except Exception as e:
-        logging.error("\n\nFailed to send email to %s for ticket #%s. Error: %s\n\n", email, ticket_number, str(e))
+        logging.info(
+            f"\n\nEmail sent successfully to {email} for ticket #{ticket_number}\n\n"
+        )
+    except Exception:
+        logging.error(
+            f"\n\nFailed to send email to {email} for ticket #{ticket_number}. "
+            "Error: {e!s}\n\n"
+        )

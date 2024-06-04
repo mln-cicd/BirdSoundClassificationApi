@@ -1,65 +1,107 @@
+############ TESTS ############
 [tool.pytest.ini_options]
 markers = ["slow: marks tests as slow (deselect with '-m \"not slow\"')"]
 
-[tool.black]
-line-length = 119
-exclude = "venv"
-
-[tool.flake8]
-docstring-convention = "all"
-ignore = ["D107", "D212", "E501", "W503", "W605", "D203", "D100", "E266"]
-exclude = ["venv"]
-max-line-length = 119
-
-# radon
-radon-max-cc = 10
-
-[tool.isort]
-profile = "black"
-multi_line_output = "VERTICAL_HANGING_INDENT"
-force_grid_wrap = 2
-line_length = 119
-
-[tool.pylint."messages control"]
-disable = [
-    "line-too-long",
-    "trailing-whitespace",
-    "missing-function-docstring",
-    "consider-using-f-string",
-    "import-error",
-    "too-few-public-methods",
-    "redefined-outer-name",
+#### RUFF LINT / FORMAT ########
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
 ]
 
-[tool.ruff]
-# Enable flake8-bugbear (`B`) rules.
-select = ["E", "F", "B", "ERA", "B008"]
+# Same as Black.
+line-length = 88
+indent-width = 4
 
-# Never enforce `E501` (line length violations).
-ignore = ["E501", "F401", "B008"]
+# Assume Python 3.8
+target-version = "py38"
 
-# Avoid trying to fix flake8-bugbear (`B`) violations.
-unfixable = ["B"]
-line-length = 119
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = [
+    "D",    # Docstring-related linting rules
+    "E",
+    "E4",   # Import error linting rules
+    "E7",   # Indentation error linting rules
+    "E9",   # Syntax error linting rules
+    "F",    # Pyflakes linting rules
+    "C90",  # McCabe complexity linting rules
+    "I",    # Ignore missing docstrings linting rules
+    "UP",   # Unneeded parenthesis detection linting rules
+    "PT",   # Pytest test linting rules
+    "PD",   # Pydocstyle linting rules
+    "AIR",  # Assigning in __init__ method detection linting rules
+    "RUF",  # Ruff-specific linting rules
+]
+ignore = [
+    "D203",     # Ignore linting rule D203 with the specified explanation
+    "D213",     # Ignore linting rule D213 with the specified explanation
+    "RUF006",   # Ignore Ruff linting rule RUF006 with the specified explanation
+    "D100",     # Ignore linting rule D100 with the specified explanation
+]
 
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
 
-# Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
-[tool.ruff.per-file-ignores]
-"__init__.py" = ["E402"]
-"path/to/file.py" = ["E402"]
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
 
-[tool.docformatter]
-# Ensure that multi-line docstring summaries start at the second line
-pre-summary-newline = false
-# Ensure that section names end with a newline
-make-summary-multi-line = true
-# Set the maximum line length for docstrings
-wrap-summaries = 88
-wrap-descriptions = 88
-# Add the --in-place flag to modify files in-place
-in-place = true
-recursive = true
-blank = true
-black = true
-style = "sphinx"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+# 4. Ignore `E402` (import violations) in all `__init__.py` files, and in select subdirectories.
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["E402", "D104"]
+"**/{tests,docs,tools}/*" = ["D103", "E402", "E", "D"] # "RUF501" = lines too long

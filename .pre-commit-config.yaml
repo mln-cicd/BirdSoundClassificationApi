@@ -1,10 +1,8 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
-exclude: ^{{cookiecutter.repo_name}}
-
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v3.2.0
     hooks:
       # Fails if there are any ">>>>>" lines in files due to merge conflicts.
       - id: check-merge-conflict
@@ -37,6 +35,7 @@ repos:
           (?x)(
               ^example/large/file.csv|
               ^example/large/sklearn-model.pkl
+
           )
       # Sort requirements in requirements.txt files.
       - id: requirements-txt-fixer
@@ -48,61 +47,12 @@ repos:
       # Detects the presence of private keys
       - id: detect-private-key
 
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: "v0.0.261"
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.4.4
     hooks:
       - id: ruff
-        args: [--exit-non-zero-on-fix, --config=./pyproject.toml]
-
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-        args:
-          - --config=./pyproject.toml
-
-
-  - repo: https://github.com/PyCQA/pylint
-    rev: v2.16.3
-    hooks:
-      - id: pylint
-        args:
-          - --rcfile=./pyproject.toml
-          - --fail-under=8.5  # Add this line to set the minimum score to 8.5
-
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-        args:
-          - --toml-config=./pyproject.toml
-          - --max-line-length=119  # Add this line to set the maximum line length
-          - --exit-zero  # Add this line to prevent flake8 from blocking the commit
-        additional_dependencies:
-          - radon
-          - flake8-docstrings
-          - Flake8-pyproject
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
-    hooks:
-      - id: isort
-        args:
-          - --settings-path=./pyproject.toml
-
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.0.1
-    hooks:
-      - id: autoflake
-        args:
-          - --in-place
-          - --remove-all-unused-imports
-          - --remove-unused-variable
-          - --ignore-init-module-imports
-
-  - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.1
-    hooks:
-      - id: docformatter
-        additional_dependencies: [tomli]
-        args: [--in-place, --config, ./pyproject.toml]
+        args: [--fix, --exit-non-zero-on-fix, --config=pyproject.toml]
+      - id: ruff-format
+    exclude: |
+      (?x)^src/
