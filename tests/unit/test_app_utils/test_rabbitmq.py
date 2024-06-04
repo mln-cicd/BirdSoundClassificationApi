@@ -107,17 +107,16 @@ def test_process_feedback_message(minio_client):
         }
     )
     minio_bucket = "test_bucket"
-    with patch("app_utils.rabbitmq.send_email") as mock_send_email:
+    with patch("app_utils.rabbitmq.send_email") as mock_send_email, \
+         patch("app_utils.rabbitmq.fetch_file_contents_from_minio") as mock_fetch_file:
+        mock_fetch_file.return_value = "/tmp/tmpm_alnmvc"
         process_feedback_message(body.encode(), minio_client, minio_bucket)
         mock_send_email.assert_called_once_with(
             "example@example.com",
-            "/path/to/file.json",
+            "/tmp/tmpm_alnmvc",
             "ABC123",
-            minio_client,
-            minio_bucket,
         )
         assert mock_send_email.call_count == 1
-
 
 @pytest.mark.asyncio()
 async def test_consume_feedback_messages(rabbit_channel, minio_client):
