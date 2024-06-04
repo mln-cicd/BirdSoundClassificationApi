@@ -1,31 +1,49 @@
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-from minio import Minio
 
 from app.api.main import app  # import your FastAPI instance
 
 
+@pytest.fixture(scope="function")
+def set_env_var(monkeypatch):
+    env_vars = {
+        "MINIO_ENDPOINT": "http://minio-endpoint.com",
+        "AWS_ACCESS_KEY_ID": "minio-access-key",
+        "AWS_SECRET_ACCESS_KEY": "minio-secret-key",
+        "MINIO_BUCKET": "minio-bucket-name",
+        "RABBITMQ_HOST": "rabbitmq-host",
+        "RABBITMQ_PORT": "5672",
+        "RABBITMQ_QUEUE_API2INF": "api-to-inf-queue",
+        "RABBITMQ_QUEUE_INF2API": "inf-to-api-queue",
+    }
+    for k, v in env_vars.items():
+        monkeypatch.setenv(k, v)
+    return
+
+
 @pytest.fixture()
-def test_app():
+def test_app(set_env_var):  # Add set_env_var as a dependency
     return TestClient(app)
 
 
-# conftest.py
+@pytest.fixture()
+def mock_minio_client():
+    with patch("app.api.main.minio_client") as mock:
+        yield mock
 
 
-@pytest.fixture(scope="session", autouse=True)
-def set_env_variables(monkeypatch):
-    monkeypatch.setenv("MINIO_ENDPOINT", "minio.example.com")
-    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "your-access-key-id")
-    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "your-secret-access-key")
-    monkeypatch.setenv("MINIO_BUCKET", "your-bucket-name")
-    monkeypatch.setenv("RABBITMQ_HOST", "localhost")
-    monkeypatch.setenv("RABBITMQ_PORT", "5672")
-    monkeypatch.setenv("RABBITMQ_QUEUE_API2INF", "api2inf-queue")
-    monkeypatch.setenv("RABBITMQ_QUEUE_INF2API", "inf2api-queue")
+@pytest.fixture()
+def mock_rabbitmq_channel():
+    with patch("app.api.main.rabbitmq_channel") as mock:
+        yield mock
 
+
+"""
+@pytest.fixture()
+def test_app(set_env_var):  # Add set_env_var as a dependency
+    return TestClient(app)
 
 @pytest.fixture()
 def rabbit_connection():
@@ -34,15 +52,14 @@ def rabbit_connection():
         mock_connection.return_value = mock_conn
         yield mock_conn
 
-
 @pytest.fixture()
 def rabbit_channel(rabbit_connection):
     mock_channel = Mock()
     rabbit_connection.channel.return_value = mock_channel
-    return mock_channel
-
+    yield mock_channel
 
 @pytest.fixture()
 def minio_client():
     mock_minio_client = Mock(spec=Minio)
-    return mock_minio_client
+    yield mock_minio_client
+    """

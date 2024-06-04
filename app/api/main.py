@@ -63,28 +63,36 @@ logging.info(
     f"Configuration: MINIO_ENDPOINT={MINIO_ENDPOINT}, MINIO_BUCKET={MINIO_BUCKET}"
 )
 
-#################### STORAGE ####################
-logging.info("Initializing MinIO client...")
-minio_client = Minio(
-    MINIO_ENDPOINT,
-    access_key=MINIO_ACCESS_KEY,
-    secret_key=MINIO_SECRET_KEY,
-    secure=False,
-)
-logging.info("Checking if bucket exists...")
-ensure_bucket_exists(minio_client, MINIO_BUCKET)
+minio_client = None
+rabbitmq_connection = None
+rabbitmq_channel = None
 
-#################### FORWARDING QUEUE ####################
-logging.info("Connecting to RabbitMQ...")
-rabbitmq_connection = get_rabbit_connection(RABBITMQ_HOST, RABBITMQ_PORT)
-rabbitmq_channel = rabbitmq_connection.channel()
 
-logging.info(f"Declaring queue: {FORWARDING_QUEUE}")
-rabbitmq_channel.queue_declare(queue=FORWARDING_QUEUE)
+def initialize_clients():
+    global minio_client, rabbitmq_connection, rabbitmq_channel
 
-#################### FEEDBACK QUEUE ####################
-logging.info(f"Declaring queue: {FEEDBACK_QUEUE}")
-rabbitmq_channel.queue_declare(queue=FEEDBACK_QUEUE)
+    #################### STORAGE ####################
+    logging.info("Initializing MinIO client...")
+    minio_client = Minio(
+        MINIO_ENDPOINT,
+        access_key=MINIO_ACCESS_KEY,
+        secret_key=MINIO_SECRET_KEY,
+        secure=False,
+    )
+    logging.info("Checking if bucket exists...")
+    ensure_bucket_exists(minio_client, MINIO_BUCKET)
+
+    #################### FORWARDING QUEUE ####################
+    logging.info("Connecting to RabbitMQ...")
+    rabbitmq_connection = get_rabbit_connection(RABBITMQ_HOST, RABBITMQ_PORT)
+    rabbitmq_channel = rabbitmq_connection.channel()
+
+    logging.info(f"Declaring queue: {FORWARDING_QUEUE}")
+    rabbitmq_channel.queue_declare(queue=FORWARDING_QUEUE)
+
+    #################### FEEDBACK QUEUE ####################
+    logging.info(f"Declaring queue: {FEEDBACK_QUEUE}")
+    rabbitmq_channel.queue_declare(queue=FEEDBACK_QUEUE)
 
 
 @app.on_event("startup")
@@ -101,6 +109,7 @@ async def startup_event() -> None:
         None
 
     """
+    initialize_clients()
     asyncio.create_task(
         consume_feedback_messages(
             rabbitmq_channel, FEEDBACK_QUEUE, minio_client, MINIO_BUCKET

@@ -13,6 +13,7 @@ import time
 
 import pika
 
+from app_utils.minio import fetch_file_contents_from_minio
 from app_utils.smtplib import send_email
 
 logging.basicConfig(
@@ -174,8 +175,18 @@ def process_feedback_message(body, minio_client, minio_bucket) -> None:
     json_minio_path = data["json_minio_path"]
     ticket_number = data["ticket_number"]
 
-    json_file_path = f"{json_minio_path}"
-    send_email(email, json_file_path, ticket_number, minio_client, minio_bucket)
+    # Fetch the file from MinIO and get the local file path
+    local_file_path = fetch_file_contents_from_minio(
+        minio_client, minio_bucket, json_minio_path
+    )
+    if local_file_path is None:
+        logging.error(
+            f"Failed to fetch file from MinIO for ticket #{ticket_number}. Skipping email sending."
+        )
+        return
+
+    # Send the email with the local file path
+    send_email(email, local_file_path, ticket_number)
 
 
 async def consume_feedback_messages(
