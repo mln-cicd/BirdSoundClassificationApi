@@ -1,31 +1,3 @@
-"""Inference Pipeline Module.
-
-This module implements the inference pipeline for bird sound classification.
-It listens for messages from a RabbitMQ queue,
-fetches the corresponding audio files from MinIO,
-performs inference using a pre-trained model,
-and publishes the results back to another RabbitMQ queue.
-
-The module relies on the following dependencies:
-- `app_utils.minio`: Provides utility functions for interacting with MinIO.
-- `app_utils.rabbitmq`: Provides utility functions for interacting with RabbitMQ.
-- `minio`: A library for interacting with MinIO object storage.
-- `model_serve.model_serve`: Provides the `ModelServer` class
-    for loading and running the pre-trained model.
-- `src.models.bird_dict`: Provides a dictionary mapping bird species
-    to their corresponding labels.
-
-Example usage:
-1. Set the required environment variables for RabbitMQ, MinIO, and model paths.
-2. Run the script: `python inference_pipeline.py`
-   The script will start listening for messages
-   from the specified RabbitMQ queue and process them accordingly.
-
-Note: Make sure to have the necessary dependencies installed
-and the pre-trained model available before running the script.
-
-"""
-
 import json
 import logging
 import os
@@ -43,7 +15,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
-
 
 #################### CONFIG ####################
 WEIGHTS_PATH = "models/detr_noneg_100q_bs20_r50dc5"
@@ -83,42 +54,68 @@ def callback(body) -> None:
     run_inference_pipeline(minio_path, email, ticket_number)
 
 
-#################### ML I/O  ####################
-def run_inference_pipeline(minio_path, email, ticket_number) -> None:
-    """Run inference pipeline, output classification and publish feedback message."""
-    file_name = os.path.basename(minio_path)
-    local_file_path = f"/tmp/{file_name}"  # Temporary local file path
-
-    # Fetch the WAV file from MinIO and save it locally
+def download_wav_file(minio_client, bucket, file_name, local_file_path):
     try:
-        minio_client.fget_object(MINIO_BUCKET, file_name, local_file_path)
+        minio_client.fget_object(bucket, file_name, local_file_path)
         logger.info(f"WAV file downloaded from MinIO: {file_name}")
     except Exception as e:
         logger.error(f"Error downloading WAV file from MinIO: {e!s}")
-        return
+        raise
 
-    inference = ModelServer(WEIGHTS_PATH, BIRD_DICT)
+
+def perform_inference(weights_path, bird_dict, local_file_path):
+    inference = ModelServer(weights_path, bird_dict)
     inference.load()
     output = inference.get_classification(local_file_path)
     logger.info(f"Classification output: {output}")
+    return output
 
+
+def save_classification_to_minio(minio_client, bucket, file_name, output):
     json_file_name = os.path.splitext(file_name)[0] + ".json"
-    # json_output = list(output.values())[0]  # REFUSED BY LINTING [ruf015]
     json_output = next(iter(output.values()))  # Extract the JSON output from the dict
-
-    # Write the JSON output to MinIO using the helper function
     json_data = json.dumps(json_output).encode("utf-8")
-    write_file_to_minio(minio_client, MINIO_BUCKET, json_file_name, json_data)
+    write_file_to_minio(minio_client, bucket, json_file_name, json_data)
+    return json_file_name
 
-    # Publish the message containing the MinIO paths, email, and ticket number
-    # on the feedback channel
+
+def publish_feedback_message(
+    rabbitmq_channel, feedback_queue, file_name, json_file_name, email, ticket_number
+):
     message = {
         "wav_minio_path": f"{MINIO_BUCKET}/{file_name}",
         "json_minio_path": f"{json_file_name}",
         "email": email,
         "ticket_number": ticket_number,
     }
-    publish_message(rabbitmq_channel, FEEDBACK_QUEUE, message)
+    publish_message(rabbitmq_channel, feedback_queue, message)
+
+
+def run_inference_pipeline(minio_path, email, ticket_number) -> None:
+    """Run inference pipeline, output classification and publish feedback message."""
+    file_name = os.path.basename(minio_path)
+    local_file_path = f"/tmp/{file_name}"  # Temporary local file path
+
+    # Fetch the WAV file from MinIO and save it locally
+    download_wav_file(minio_client, MINIO_BUCKET, file_name, local_file_path)
+
+    # Perform inference
+    output = perform_inference(WEIGHTS_PATH, BIRD_DICT, local_file_path)
+
+    # Save classification results to MinIO
+    json_file_name = save_classification_to_minio(
+        minio_client, MINIO_BUCKET, file_name, output
+    )
+
+    # Publish feedback message
+    publish_feedback_message(
+        rabbitmq_channel,
+        FEEDBACK_QUEUE,
+        file_name,
+        json_file_name,
+        email,
+        ticket_number,
+    )
 
 
 #################### MAIN LOOP ####################
